@@ -1,0 +1,14 @@
+data/clean/
+data/degraded/
+outputs/
+output/
+checkpoints/
+ckpt/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.log
+__pycache__/
+*.pyc
+.DS_Store

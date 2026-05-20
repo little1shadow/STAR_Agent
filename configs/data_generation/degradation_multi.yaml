@@ -1,0 +1,20 @@
+# STAR-Agent multi-degradation dataset config.
+# 多退化必须记录 lineage，保证每张 double/triple 图可以回溯到父图和每一步参数。
+
+source_single_root: STAR_Agent/data/degraded/single
+output_root: STAR_Agent/data/degraded
+
+stages:
+  double:
+    output_dir: STAR_Agent/data/degraded/double
+    max_images: null
+    per_combo_limit: 4000
+  triple:
+    output_dir: STAR_Agent/data/degraded/triple
+    max_images: null
+    per_combo_limit: 2000
+
+lineage:
+  strict_parent_reuse: true
+  save_parent_paths: true
+  save_step_params: true

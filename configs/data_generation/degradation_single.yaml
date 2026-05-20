@@ -1,0 +1,103 @@
+# STAR-Agent single degradation dataset config.
+# 每类退化统一输出到：single/<degradation>/<mode>/level_<1-5>/{images,masks,fields,meta}
+
+source_clean:
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+  manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+
+output:
+  root_dir: STAR_Agent/data/degraded/single
+  overwrite_existing: false
+  save_field: true
+  save_mask: true
+  save_meta: true
+
+levels: [1, 2, 3, 4, 5]
+
+categories:
+  noise:
+    modes: [gaussian, poisson, dark_current, background, mixed]
+  smear:
+    modes: [column_bias, row_bias, bright_source_vertical, mixed]
+  cosmic_ray:
+    modes: [point, line, blob, mixed]
+  dead_pixels:
+    modes: [sparse_hot, sparse_dead, clustered_hot, dead_column, mixed]
+  dqg:
+    modes: [left, right, top, bottom, top_left, top_right, bottom_left, bottom_right, diffuse]
+  solar_stray_light:
+    modes: [grazing_solar_limb, single_internal_ghost, multi_reflection_ghosts, veiling_glare_bleed]
+  motion_blur:
+    modes: [linear, curved, non_uniform, jitter]
+
+noise:
+  # 星敏/空间相机常见噪声：read noise、shot noise、dark current、背景颗粒。
+  mask_threshold_by_level:
+    1: 0.006
+    2: 0.010
+    3: 0.017
+    4: 0.026
+    5: 0.040
+
+smear:
+  # 传感器读出偏置和强源饱和拖尾；1/2 级保持很弱，避免过早显著。
+  mask_threshold_by_level:
+    1: 0.004
+    2: 0.007
+    3: 0.012
+    4: 0.020
+    5: 0.032
+
+cosmic_ray:
+  # 高能粒子击中探测器形成点、线、blob 或混合事件。
+  mask_threshold_by_level:
+    1: 0.020
+    2: 0.035
+    3: 0.055
+    4: 0.075
+    5: 0.090
+
+dead_pixels:
+  # 坏点/热点/死列属于像元响应异常，mask 通常应稀疏且局部。
+  mask_threshold_by_level:
+    1: 0.080
+    2: 0.100
+    3: 0.120
+    4: 0.140
+    5: 0.160
+
+dqg:
+  # DQG 是方向性大面积弥散入侵，不包含太阳角、点光源或规则强弧线。
+  mask_threshold_by_level:
+    1: 0.010
+    2: 0.020
+    3: 0.040
+    4: 0.075
+    5: 0.115
+
+solar_stray_light:
+  # 物理约束版：off-axis extended sun + baffle/aperture scatter + internal reflection ghost + sensor column bleed。
+  # 完全不使用旧版 DepictQA 太阳杂散光代码，也不再按视觉经验手工画弧。
+  side_weights:
+    top_left: 0.34
+    top_right: 0.34
+    left: 0.10
+    right: 0.10
+    bottom_left: 0.06
+    bottom_right: 0.06
+  mask_threshold_by_level:
+    1: 0.020
+    2: 0.034
+    3: 0.060
+    4: 0.095
+    5: 0.135
+
+motion_blur:
+  # 物理约束版：曝光时间内视轴/平台运动导致星点和空间目标在像面连续位移；
+  # 使用时间采样轨迹生成 PSF kernel，再对高频天体信号做曝光积分。
+  mask_threshold_by_level:
+    1: 0.006
+    2: 0.009
+    3: 0.013
+    4: 0.018
+    5: 0.024

@@ -1,0 +1,22 @@
+{
+  "catalog": "Gaia DR3",
+  "table": "gaiadr3.gaia_source",
+  "tap_url": "https://gea.esac.esa.int/tap-server/tap/sync",
+  "mode": "cone",
+  "downloaded_at_utc": "2026-05-19T09:31:47.486476+00:00",
+  "output_path": "STAR_Agent/data/catalogs/raw/gaia_dr3_tile_ra181_dec1_r1_g19.csv",
+  "parameters": {
+    "ra_deg": 181.0,
+    "dec_deg": 1.0,
+    "radius_deg": 1.0,
+    "mag_limit": 19.0,
+    "row_limit": 50000,
+    "query_file": null
+  },
+  "query": "SELECT TOP 50000\n  source_id,\n  ra,\n  dec,\n  phot_g_mean_mag,\n  phot_bp_mean_mag,\n  phot_rp_mean_mag,\n  bp_rp,\n  parallax,\n  pmra,\n  pmdec,\n  ruwe\nFROM gaiadr3.gaia_source\nWHERE\n  1 = CONTAINS(\n    POINT('ICRS', ra, dec),\n    CIRCLE('ICRS', 181.00000000, 1.00000000, 1.00000000)\n  )\n  AND phot_g_mean_mag IS NOT NULL\n  AND phot_g_mean_mag <= 19.0000\nORDER BY phot_g_mean_mag ASC",
+  "stats": {
+    "output_path": "STAR_Agent/data/catalogs/raw/gaia_dr3_tile_ra181_dec1_r1_g19.csv",
+    "bytes": 698313,
+    "elapsed_sec": 111.8371069431305
+  }
+}

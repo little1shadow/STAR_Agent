@@ -1,0 +1,20 @@
+SELECT TOP 120000
+  source_id,
+  ra,
+  dec,
+  phot_g_mean_mag,
+  phot_bp_mean_mag,
+  phot_rp_mean_mag,
+  bp_rp,
+  parallax,
+  pmra,
+  pmdec,
+  ruwe
+FROM gaiadr3.gaia_source
+WHERE
+  1 = CONTAINS(
+    POINT('ICRS', ra, dec),
+    CIRCLE('ICRS', 180.00000000, 0.00000000, 2.00000000)
+  )
+  AND phot_g_mean_mag IS NOT NULL
+  AND phot_g_mean_mag <= 19.0000

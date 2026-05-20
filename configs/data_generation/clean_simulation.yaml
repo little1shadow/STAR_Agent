@@ -1,0 +1,93 @@
+catalog:
+  path: STAR_Agent/data/catalogs/raw/gaia_dr3_merged_ra180_dec0_grid3_r1_g19.csv
+  mag_limit: 19.0
+  ruwe_max: null
+
+output:
+  root_dir: STAR_Agent/data/clean/synthetic_v001
+  image_prefix: synthetic_clean
+  overwrite_manifest: true
+
+generation:
+  num_images: 2000
+  seed: 131
+  max_resample_attempts: 30
+  min_stars_per_image: 1800
+
+camera:
+  width: 1024
+  height: 1024
+  fov_deg: 1.5
+  bit_depth: 8
+  max_adu: 255.0
+
+pointing:
+  ra_center_deg: 180.0
+  dec_center_deg: 0.0
+  ra_jitter_deg: 0.75
+  dec_jitter_deg: 0.75
+  roll_min_deg: 0.0
+  roll_max_deg: 360.0
+
+photometry:
+  mag_zero_point: 14.0
+  flux_at_zero_point: 1450.0
+  min_flux: 0.8
+  max_flux: 240000.0
+
+psf:
+  type: moffat
+  fwhm_px_mean: 1.65
+  fwhm_px_std: 0.18
+  beta: 2.9
+  kernel_radius_factor: 5.5
+  halo_flux_threshold: 25000.0
+  halo_fraction: 0.012
+  halo_fwhm_factor: 3.5
+
+background:
+  level_mean: 20.0
+  level_std: 2.0
+  gradient_amplitude: 0.35
+  vignette_amplitude: 0.002
+  read_noise_sigma: 7.0
+  shot_noise_scale: 0.14
+  unresolved_speckle_density: 0.010
+  unresolved_speckle_min: 4.0
+  unresolved_speckle_max: 18.0
+
+masks:
+  star_radius_px: 4
+  star_flux_threshold: 1.0
+
+targets:
+  # 目标是 clean 场景内容，不是 degradation。
+  # 这里设置 80% 图像含目标，20% 图像无目标；含目标图像随机注入 1-5 个目标。
+  # 无目标图像用于估计下游检测器的 false alarm。
+  enabled: true
+  image_probability: 0.8
+  targets_per_image_min: 1
+  targets_per_image_max: 5
+  min_edge_distance_px: 42
+  min_distance_from_star_px: 8
+  min_distance_between_targets_px: 28
+  local_noise_sigma: 7.0
+  mask_threshold_ratio: 0.08
+  max_position_attempts: 100
+
+  # 点状弱目标对应轻量 LoG/blob detector。
+  # 保留 30% 是为了覆盖“接近星点的小目标”场景，但单帧区分难度较高。
+  point_blob:
+    probability: 0.3
+    snr_range: [6.0, 16.0]
+    fwhm_px_range: [1.4, 2.4]
+    axis_ratio_range: [1.0, 1.45]
+
+  # 短条纹目标对应 ASTRiDE 或类 ASTRiDE streak detector。
+  # 70% 条纹目标让第一阶段下游反馈更稳定，因为条纹具有明确几何先验。
+  short_streak:
+    probability: 0.7
+    snr_range: [7.0, 22.0]
+    length_px_range: [10.0, 34.0]
+    width_px_range: [1.2, 2.8]
+    end_taper_strength: 0.35
