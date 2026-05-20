@@ -1,0 +1,18 @@
+# STAR-Agent policy rollout data config.
+# policy 离线样本同样必须绑定 clean 来源，因为 reward / risk / downstream label 的统计分布和来源强相关。
+
+clean_source:
+  domain: synthetic
+  name: synthetic_v002_targets
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+  manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+
+degraded_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets
+tool_dataset_root: STAR_Agent/data/tool_datasets/synthetic/synthetic_v002_targets
+star_depictqa_lite_meta_root: STAR_Agent/data/star_depictqa_lite_meta/synthetic/synthetic_v002_targets
+output_root: STAR_Agent/data/policy_data/synthetic/synthetic_v002_targets
+
+rollout:
+  max_steps: 4
+  use_gt_reward_offline: true
+  save_all_candidate_rewards: true

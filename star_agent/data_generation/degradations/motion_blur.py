@@ -34,6 +34,7 @@ from scipy.ndimage import gaussian_filter
 from scipy.signal import fftconvolve
 
 from ..common.io import ensure_dir, write_json
+from ._single_common import resolve_single_output_root
 
 
 MOTION_BLUR_MODES = ["linear", "curved", "non_uniform", "jitter"]
@@ -494,7 +495,7 @@ def run_batch(args: argparse.Namespace) -> dict[str, Any]:
     records = read_jsonl(args.manifest)
     if args.num_images is not None:
         records = records[: max(0, int(args.num_images))]
-    output_root = Path(args.output_root)
+    output_root = resolve_single_output_root(args, cfg, "motion_blur")
     manifest_out = output_root / "_manifests" / f"motion_blur_preview_{len(records)}.jsonl"
     ensure_dir(manifest_out.parent)
     manifest_out.write_text("", encoding="utf-8")
@@ -599,7 +600,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--field", default=None)
     parser.add_argument("--meta", default=None)
     parser.add_argument("--manifest", default=None)
-    parser.add_argument("--output_root", default="STAR_Agent/data/degraded/single/motion_blur")
+    parser.add_argument("--output_root", default=None)
     parser.add_argument("--num_images", type=int, default=None)
     parser.add_argument("--level", type=int, default=None, choices=[1, 2, 3, 4, 5])
     parser.add_argument("--mode", default=None, choices=MOTION_BLUR_MODES)

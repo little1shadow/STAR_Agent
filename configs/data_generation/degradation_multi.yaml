@@ -1,16 +1,23 @@
 # STAR-Agent multi-degradation dataset config.
 # 多退化必须记录 lineage，保证每张 double/triple 图可以回溯到父图和每一步参数。
+# 当前默认使用 synthetic/synthetic_v002_targets，真实 clean 请使用 real_selected_v001 变体配置。
 
-source_single_root: STAR_Agent/data/degraded/single
-output_root: STAR_Agent/data/degraded
+clean_source:
+  domain: synthetic
+  name: synthetic_v002_targets
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+  manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+
+source_single_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets/single
+output_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets
 
 stages:
   double:
-    output_dir: STAR_Agent/data/degraded/double
+    output_dir: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets/double
     max_images: null
     per_combo_limit: 4000
   triple:
-    output_dir: STAR_Agent/data/degraded/triple
+    output_dir: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets/triple
     max_images: null
     per_combo_limit: 2000
 

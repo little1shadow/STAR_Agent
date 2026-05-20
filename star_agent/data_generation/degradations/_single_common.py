@@ -159,6 +159,31 @@ def load_config(path: str | Path | None) -> dict[str, Any]:
     return yaml.safe_load(p.read_text(encoding="utf-8")) or {}
 
 
+def resolve_single_output_root(args: Any, cfg: dict[str, Any], degradation: str) -> Path:
+    """解析单退化输出根目录，避免真实 clean 和仿真 clean 混写。
+
+    输入:
+    - `args`: 命令行参数，优先读取用户显式传入的 `--output_root`。
+    - `cfg`: `degradation_single.yaml` 配置字典。
+    - `degradation`: 当前退化名称，例如 `noise`、`dqg`。
+
+    输出:
+    - 当前退化专属输出目录，推荐结构为
+      `data/degraded/<domain>/<clean_source_name>/single/<degradation>`。
+
+    设计目的:
+    - 如果用户显式传入 `--output_root`，完全尊重用户路径。
+    - 如果未传入，则从配置 `output.root_dir` 派生，避免默认写到旧的全局
+      `data/degraded/single`，从源头防止 real / synthetic 数据混在一起。
+    """
+
+    if getattr(args, "output_root", None):
+        return Path(args.output_root)
+    output_cfg = cfg.get("output", {}) if isinstance(cfg, dict) else {}
+    root_dir = output_cfg.get("root_dir", "STAR_Agent/data/degraded/synthetic/synthetic_v002_targets/single")
+    return Path(root_dir) / degradation
+
+
 def output_paths(output_root: Path, degradation: str, mode: str, level: int, image_id: str) -> dict[str, Path]:
     """构造标准 single degradation 输出路径。
 
@@ -247,7 +272,7 @@ def run_standard_batch(
     records = read_jsonl(args.manifest)
     if args.num_images is not None:
         records = records[: max(0, int(args.num_images))]
-    output_root = Path(args.output_root)
+    output_root = resolve_single_output_root(args, cfg, degradation)
     manifest_out = output_root / "_manifests" / f"{degradation}_preview_{len(records)}.jsonl"
     ensure_dir(manifest_out.parent)
     manifest_out.write_text("", encoding="utf-8")

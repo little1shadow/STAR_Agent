@@ -4,7 +4,7 @@ catalog:
   ruwe_max: null
 
 output:
-  root_dir: STAR_Agent/data/clean/synthetic_v001
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
   image_prefix: synthetic_clean
   overwrite_manifest: true
 

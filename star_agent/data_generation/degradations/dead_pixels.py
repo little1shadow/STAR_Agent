@@ -109,7 +109,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate dead pixel degradation.")
     parser.add_argument("--config", default="STAR_Agent/configs/data_generation/degradation_single.yaml")
     parser.add_argument("--manifest", required=True)
-    parser.add_argument("--output_root", default="STAR_Agent/data/degraded/single/dead_pixels")
+    parser.add_argument("--output_root", default=None)
     parser.add_argument("--num_images", type=int, default=None)
     parser.add_argument("--level", type=int, default=None, choices=[1, 2, 3, 4, 5])
     parser.add_argument("--mode", default=None, choices=DEAD_PIXEL_MODES)

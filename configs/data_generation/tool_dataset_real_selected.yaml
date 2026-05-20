@@ -1,0 +1,17 @@
+# Real selected clean variant for executor/tool dataset generation.
+# 真实 clean 缺少严格 GT mask/label，默认建议只构建 test/validation 或做 domain-gap 分析。
+
+clean_source:
+  domain: real
+  name: real_selected_v001
+  root_dir: STAR_Agent/data/clean/real_selected_v001
+  manifest_path: STAR_Agent/data/clean/real_selected_v001/manifest.jsonl
+
+degraded_root: STAR_Agent/data/degraded/real/real_selected_v001
+output_root: STAR_Agent/data/tool_datasets/real/real_selected_v001
+
+splits:
+  train: 0.0
+  val: 0.5
+  test: 0.5
+  seed: 131

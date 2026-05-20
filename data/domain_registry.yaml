@@ -1,0 +1,29 @@
+# STAR-Agent clean source registry.
+# 后续所有 degraded/tool/meta/policy 数据都应引用这里的 domain + source name。
+
+clean_sources:
+  synthetic_v002_targets:
+    domain: synthetic
+    description: Gaia DR3 星表仿真背景 + 注入 point/blob 与 short-streak 目标。
+    root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+    manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+    has_star_mask: true
+    has_target_mask: true
+    has_target_label: true
+    recommended_for:
+      - degradation_simulation
+      - executor_training
+      - star_depictqa_lite_training
+      - offline_policy_rollout
+  real_selected_v001:
+    domain: real
+    description: 从真实数据中筛选的相对 clean 图像，主要用于真实域验证、风格校准和仿真真实性对照。
+    root_dir: STAR_Agent/data/clean/real_selected_v001
+    manifest_path: STAR_Agent/data/clean/real_selected_v001/manifest.jsonl
+    has_star_mask: false
+    has_target_mask: false
+    has_target_label: false
+    recommended_for:
+      - real_domain_validation
+      - degradation_visual_calibration
+      - domain_gap_analysis

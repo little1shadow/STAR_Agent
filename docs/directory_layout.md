@@ -143,7 +143,7 @@ exports/star_depictqa_lite/
 训练 meta 数据放在：
 
 ```text
-data/star_depictqa_lite_meta/
+data/star_depictqa_lite_meta/<domain>/<clean_source_name>/
 ```
 
 ## 4. Policy Net
@@ -183,7 +183,7 @@ exports/policy/
 经验库和离线 rollout 数据放在：
 
 ```text
-data/policy_data/
+data/policy_data/<domain>/<clean_source_name>/
 ```
 
 ## 5. Runtime
@@ -236,3 +236,83 @@ runs/data_generation/clean_simulation/build_clean_2000.log
 ```
 
 是这一次生成 clean 数据集的运行日志。
+
+## 7. Real / Synthetic 数据必须分开
+
+当前 `data/clean/` 下会同时存在真实筛选 clean 和星表仿真 clean，例如：
+
+```text
+data/clean/real_selected_v001/
+data/clean/synthetic_v002_targets/
+```
+
+这两类 clean 的用途不同：
+
+```text
+synthetic_v002_targets: 有完整星点 mask、目标 mask、目标 label，适合生成退化、训练 executor、训练 Star-DepictQA-Lite、构建离线 policy reward。
+real_selected_v001: 更接近真实观测风格，但通常缺少严格 GT，适合真实域验证、视觉校准和 domain gap 分析。
+```
+
+因此从 clean 派生出来的所有数据都必须带上两层来源标识：
+
+```text
+<domain>/<clean_source_name>
+```
+
+其中 `domain` 当前取值：
+
+```text
+synthetic
+real
+```
+
+推荐目录结构如下：
+
+```text
+data/degraded/synthetic/synthetic_v002_targets/single/
+data/degraded/synthetic/synthetic_v002_targets/double/
+data/degraded/synthetic/synthetic_v002_targets/triple/
+
+data/degraded/real/real_selected_v001/single/
+data/degraded/real/real_selected_v001/double/
+data/degraded/real/real_selected_v001/triple/
+```
+
+Executor 训练/测试数据同样分开：
+
+```text
+data/tool_datasets/synthetic/synthetic_v002_targets/denoising/
+data/tool_datasets/synthetic/synthetic_v002_targets/destray_light/
+data/tool_datasets/synthetic/synthetic_v002_targets/motion_deblurring/
+
+data/tool_datasets/real/real_selected_v001/denoising/
+data/tool_datasets/real/real_selected_v001/destray_light/
+data/tool_datasets/real/real_selected_v001/motion_deblurring/
+```
+
+Star-DepictQA-Lite 和 Policy Net 相关数据也按相同规则存放：
+
+```text
+data/star_depictqa_lite_meta/synthetic/synthetic_v002_targets/
+data/star_depictqa_lite_meta/real/real_selected_v001/
+
+data/policy_data/synthetic/synthetic_v002_targets/
+data/policy_data/real/real_selected_v001/
+```
+
+清洁数据源的统一登记文件为：
+
+```text
+data/domain_registry.yaml
+```
+
+后续脚本应优先读取 `domain_registry.yaml` 或配置文件中的 `clean_source` 字段。不要再把新数据直接写到旧的全局路径：
+
+```text
+data/degraded/single/
+data/degraded/double/
+data/degraded/triple/
+data/tool_datasets/denoising/
+```
+
+这些旧路径只作为早期骨架和兼容路径保留，不建议继续生成新数据。

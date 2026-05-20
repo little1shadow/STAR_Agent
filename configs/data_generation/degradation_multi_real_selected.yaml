@@ -1,0 +1,25 @@
+# Real selected clean variant for multi-degradation generation.
+
+clean_source:
+  domain: real
+  name: real_selected_v001
+  root_dir: STAR_Agent/data/clean/real_selected_v001
+  manifest_path: STAR_Agent/data/clean/real_selected_v001/manifest.jsonl
+
+source_single_root: STAR_Agent/data/degraded/real/real_selected_v001/single
+output_root: STAR_Agent/data/degraded/real/real_selected_v001
+
+stages:
+  double:
+    output_dir: STAR_Agent/data/degraded/real/real_selected_v001/double
+    max_images: null
+    per_combo_limit: 4000
+  triple:
+    output_dir: STAR_Agent/data/degraded/real/real_selected_v001/triple
+    max_images: null
+    per_combo_limit: 2000
+
+lineage:
+  strict_parent_reuse: true
+  save_parent_paths: true
+  save_step_params: true

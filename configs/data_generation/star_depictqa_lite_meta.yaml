@@ -1,0 +1,17 @@
+# STAR-DepictQA-Lite meta config.
+# meta 也按 clean 来源分开，避免 synthetic 训练集和 real selected 验证集在文件层面混写。
+
+clean_source:
+  domain: synthetic
+  name: synthetic_v002_targets
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+  manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+
+degraded_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets
+output_root: STAR_Agent/data/star_depictqa_lite_meta/synthetic/synthetic_v002_targets
+
+tasks:
+  single: true
+  compare: true
+  risk: true
+  damage: true

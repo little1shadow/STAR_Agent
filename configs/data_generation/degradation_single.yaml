@@ -1,12 +1,21 @@
 # STAR-Agent single degradation dataset config.
-# 每类退化统一输出到：single/<degradation>/<mode>/level_<1-5>/{images,masks,fields,meta}
+# 当前默认使用服务器上已经生成好的 2000 张带目标仿真 clean 图。
+# 关键约束：real clean 与 synthetic clean 后续所有退化数据必须分开存放，避免训练/评估时混域。
 
+clean_source:
+  domain: synthetic
+  name: synthetic_v002_targets
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+  manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+
+# 兼容旧脚本字段；新代码优先使用 clean_source。
 source_clean:
   root_dir: STAR_Agent/data/clean/synthetic_v002_targets
   manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
 
 output:
-  root_dir: STAR_Agent/data/degraded/single
+  # 单退化实际写入：root_dir/<degradation>/<mode>/level_<1-5>/{images,masks,fields,meta}
+  root_dir: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets/single
   overwrite_existing: false
   save_field: true
   save_mask: true
@@ -77,7 +86,6 @@ dqg:
 
 solar_stray_light:
   # 物理约束版：off-axis extended sun + baffle/aperture scatter + internal reflection ghost + sensor column bleed。
-  # 完全不使用旧版 DepictQA 太阳杂散光代码，也不再按视觉经验手工画弧。
   side_weights:
     top_left: 0.34
     top_right: 0.34
@@ -93,8 +101,7 @@ solar_stray_light:
     5: 0.135
 
 motion_blur:
-  # 物理约束版：曝光时间内视轴/平台运动导致星点和空间目标在像面连续位移；
-  # 使用时间采样轨迹生成 PSF kernel，再对高频天体信号做曝光积分。
+  # 物理约束版：曝光时间内视轴/平台运动导致星点和空间目标在像面连续位移。
   mask_threshold_by_level:
     1: 0.006
     2: 0.009

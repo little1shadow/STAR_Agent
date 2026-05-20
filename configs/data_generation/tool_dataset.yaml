@@ -1,0 +1,37 @@
+# STAR-Agent executor/tool dataset config.
+# 从 domain/source_name 分层后的退化数据构建各 executor 的 train/val/test。
+
+clean_source:
+  domain: synthetic
+  name: synthetic_v002_targets
+  root_dir: STAR_Agent/data/clean/synthetic_v002_targets
+  manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
+
+degraded_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets
+output_root: STAR_Agent/data/tool_datasets/synthetic/synthetic_v002_targets
+
+splits:
+  train: 0.8
+  val: 0.1
+  test: 0.1
+  seed: 131
+
+subtasks:
+  denoising:
+    degradations: [noise]
+    include_multi_degradation: true
+  desmear:
+    degradations: [smear]
+    include_multi_degradation: true
+  decosmic_ray:
+    degradations: [cosmic_ray]
+    include_multi_degradation: true
+  dead_pixel_repair:
+    degradations: [dead_pixels]
+    include_multi_degradation: true
+  destray_light:
+    degradations: [dqg, solar_stray_light]
+    include_multi_degradation: true
+  motion_deblurring:
+    degradations: [motion_blur]
+    include_multi_degradation: true

@@ -1,0 +1,18 @@
+# Real selected clean variant for policy rollout evaluation.
+# 真实 clean 通常无完整 GT，因此不建议作为 Q label 主训练源。
+
+clean_source:
+  domain: real
+  name: real_selected_v001
+  root_dir: STAR_Agent/data/clean/real_selected_v001
+  manifest_path: STAR_Agent/data/clean/real_selected_v001/manifest.jsonl
+
+degraded_root: STAR_Agent/data/degraded/real/real_selected_v001
+tool_dataset_root: STAR_Agent/data/tool_datasets/real/real_selected_v001
+star_depictqa_lite_meta_root: STAR_Agent/data/star_depictqa_lite_meta/real/real_selected_v001
+output_root: STAR_Agent/data/policy_data/real/real_selected_v001
+
+rollout:
+  max_steps: 4
+  use_gt_reward_offline: false
+  save_all_candidate_rewards: false
