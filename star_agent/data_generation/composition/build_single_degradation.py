@@ -203,7 +203,7 @@ def level_dirs(output_root: Path, degradation: str, mode: str, level: int) -> di
     - `level`: 退化等级。
 
     输出:
-    - 包含 images/masks/fields/meta/locks 的目录字典。
+    - 包含 images/masks/fields/meta/lineage/locks 的目录字典。
     """
 
     base = output_root / degradation / mode / f"level_{level}"
@@ -213,6 +213,7 @@ def level_dirs(output_root: Path, degradation: str, mode: str, level: int) -> di
         "masks": base / "masks",
         "fields": base / "fields",
         "meta": base / "meta",
+        "lineage": base / "lineage",
         "locks": base / ".locks",
     }
     for key, path in dirs.items():
@@ -250,6 +251,27 @@ def append_manifest(path: Path, record: dict[str, Any]) -> None:
     ensure_dir(path.parent)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def optional_resolved_path(record: dict[str, Any], key: str) -> str | None:
+    """从 clean record 中读取并解析可选路径。
+
+    输入:
+    - `record`: clean manifest 中的一条记录。
+    - `key`: 路径字段名，例如 `star_mask_path`、`targets_label_path`。
+
+    输出:
+    - 解析后的绝对路径字符串；字段不存在时返回 None。
+
+    用途:
+    - 让每张退化图的 meta/lineage 直接携带 clean mask 和 label 路径，
+      后续构建工具训练集或下游指标时可以直接读取。
+    """
+
+    value = record.get(key)
+    if not value:
+        return None
+    return str(resolve_path(value))
 
 
 def threshold_map(cfg: dict[str, Any], degradation: str) -> dict[int, float] | None:
@@ -355,6 +377,92 @@ def make_output_name(clean_id: str, degradation: str, mode: str, level: int, seq
     return f"{clean_id}@{degradation}@{safe_mode}@l{level}@{seq:04d}_{token}"
 
 
+def build_lineage_record(
+    clean_source: dict[str, Any],
+    clean_record: dict[str, Any],
+    clean_path: Path,
+    degradation: str,
+    mode: str,
+    level: int,
+    seed: int,
+    image_path: Path,
+    mask_path: Path,
+    field_path: Path,
+    meta_path: Path,
+    lineage_path: Path,
+) -> dict[str, Any]:
+    """构建单退化样本的显式溯源记录。
+
+    输入:
+    - `clean_source`: clean 数据源信息，包含 domain/name/root_dir/manifest_path。
+    - `clean_record`: clean manifest 中的原始记录。
+    - `clean_path`: clean 图像路径。
+    - `degradation`: 当前退化类型。
+    - `mode`: 退化子模式。
+    - `level`: 退化等级。
+    - `seed`: 本次退化随机种子。
+    - `image_path`: 退化图路径。
+    - `mask_path`: 退化 mask 路径。
+    - `field_path`: 连续退化场路径。
+    - `meta_path`: meta 文件路径。
+    - `lineage_path`: lineage 文件路径。
+
+    输出:
+    - lineage 字典。
+
+    设计目的:
+    - single 阶段的父节点就是 clean 图。
+    - double/triple 阶段会继续引用上一阶段 lineage，从而形成完整链路。
+    """
+
+    clean_id = str(clean_record.get("image_id") or clean_path.stem)
+    return {
+        "stage": "single",
+        "sample_id": image_path.stem,
+        "clean_source": {
+            "domain": clean_source.get("domain"),
+            "name": clean_source.get("name"),
+            "root_dir": clean_source.get("root_dir"),
+            "manifest_path": clean_source.get("manifest_path"),
+        },
+        "clean": {
+            "image_id": clean_id,
+            "image_path": str(clean_path),
+            "star_mask_path": optional_resolved_path(clean_record, "star_mask_path"),
+            "target_mask_path": optional_resolved_path(clean_record, "target_mask_path"),
+            "background_mask_path": optional_resolved_path(clean_record, "background_mask_path"),
+            "valid_mask_path": optional_resolved_path(clean_record, "valid_mask_path"),
+            "stars_label_path": optional_resolved_path(clean_record, "stars_label_path"),
+            "targets_label_path": optional_resolved_path(clean_record, "targets_label_path"),
+            "camera_label_path": optional_resolved_path(clean_record, "camera_label_path"),
+            "raw_record": clean_record,
+        },
+        "steps": [
+            {
+                "step_index": 1,
+                "input_stage": "clean",
+                "input_image_path": str(clean_path),
+                "output_stage": "single",
+                "output_image_path": str(image_path),
+                "degradation": degradation,
+                "mode": mode,
+                "level": int(level),
+                "seed": int(seed),
+                "mask_path": str(mask_path),
+                "field_path": str(field_path),
+                "meta_path": str(meta_path),
+            }
+        ],
+        "current": {
+            "image_path": str(image_path),
+            "degradation_mask_path": str(mask_path),
+            "degradation_field_path": str(field_path),
+            "meta_path": str(meta_path),
+            "lineage_path": str(lineage_path),
+        },
+    }
+
+
 def generate_one(
     cfg: dict[str, Any],
     clean_records: list[dict[str, Any]],
@@ -396,26 +504,52 @@ def generate_one(
     mask_path = dirs["masks"] / f"{name}.png"
     field_path = dirs["fields"] / f"{name}.png"
     meta_path = dirs["meta"] / f"{name}.json"
+    lineage_path = dirs["lineage"] / f"{name}.json"
 
     save_rgb_float(image_path, degraded)
     save_gray_float(mask_path, mask)
     save_gray_float(field_path, field)
 
+    lineage = build_lineage_record(
+        clean_source=clean_source,
+        clean_record=clean_record,
+        clean_path=clean_path,
+        degradation=degradation,
+        mode=mode,
+        level=level,
+        seed=seed,
+        image_path=image_path,
+        mask_path=mask_path,
+        field_path=field_path,
+        meta_path=meta_path,
+        lineage_path=lineage_path,
+    )
+
     meta.update(
         {
+            "sample_id": name,
             "stage": "single",
             "clean_source_domain": clean_source.get("domain"),
             "clean_source_name": clean_source.get("name"),
             "clean_image_id": clean_id,
             "clean_image_path": str(clean_path),
+            "clean_star_mask_path": lineage["clean"]["star_mask_path"],
+            "clean_target_mask_path": lineage["clean"]["target_mask_path"],
+            "clean_background_mask_path": lineage["clean"]["background_mask_path"],
+            "clean_valid_mask_path": lineage["clean"]["valid_mask_path"],
+            "clean_stars_label_path": lineage["clean"]["stars_label_path"],
+            "clean_targets_label_path": lineage["clean"]["targets_label_path"],
+            "clean_camera_label_path": lineage["clean"]["camera_label_path"],
             "source_clean_record": clean_record,
             "image_path": str(image_path),
             "mask_path": str(mask_path),
             "field_path": str(field_path),
             "meta_path": str(meta_path),
+            "lineage_path": str(lineage_path),
         }
     )
     write_json(meta_path, meta)
+    write_json(lineage_path, lineage)
     append_manifest(current_manifest_path(output_root, degradation), meta)
     return meta
 
