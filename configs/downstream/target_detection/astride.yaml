@@ -1,0 +1,26 @@
+# ASTRiDE streak detector config.
+# ASTRiDE 用于 short_streak target / 卫星条纹检测，不用于 star mask。
+
+env:
+  conda_env: star_astride
+
+input:
+  # ASTRiDE 原生读取 FITS；PNG/JPG 会先转换成临时 FITS。
+  fits_dtype: float32
+
+streak:
+  # 这些参数会尝试传给 astride.Streak。若当前版本不支持，会自动降级为默认 Streak(fits_path)。
+  remove_bkg: constant
+  contour_threshold: 3.0
+  area_cut: 10
+  shape_cut: 0.3
+  radius_dev_cut: 0.4
+
+mask:
+  # 根据 ASTRiDE 返回的 streak.x / streak.y 坐标膨胀成 mask。
+  dilate_px: 2
+
+quality:
+  detector: astride
+  mask_source: astride_streak_v001
+  mask_confidence: 0.75

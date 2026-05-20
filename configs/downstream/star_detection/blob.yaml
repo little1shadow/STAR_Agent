@@ -1,0 +1,9 @@
+# Lightweight star blob detector config.
+# 用于在线 proxy 和真实 clean pseudo star mask 生成。
+background_sigma: 9.0
+smooth_sigma: 0.8
+threshold_sigma: 4.5
+min_area: 2
+max_area: 80
+min_snr: 4.0
+mask_dilation: 2

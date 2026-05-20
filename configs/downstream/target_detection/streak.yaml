@@ -1,0 +1,9 @@
+# Short streak target detector config.
+background_sigma: 7.0
+threshold_sigma: 3.8
+min_area: 8
+max_area: 600
+min_length_px: 8.0
+min_aspect_ratio: 2.0
+min_snr: 4.0
+star_exclusion_dilation: 1

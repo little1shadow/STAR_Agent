@@ -1,0 +1,31 @@
+# tetra3rs star centroid extraction and pseudo-mask config.
+# 该配置用于真实 clean-data 的 star pseudo mask 生成。
+
+env:
+  # agenticir 主环境通过 conda run 调用时使用；如果当前环境已经安装 tetra3rs，可忽略。
+  conda_env: star_downstream
+
+centroid_extraction:
+  # tetra3rs.extract_centroids 的阈值。真实 8-bit PNG 可先从 4-8 调起；星点过多就增大。
+  sigma_threshold: 5.0
+  min_pixels: 2
+  max_pixels: 300
+  local_bg_block_size: 32
+  max_elongation: 3.5
+  max_returned: 5000
+
+coordinates:
+  # tetra3rs 文档中 centroid 默认是图像中心坐标系：原点在图像中心，+X 向右，+Y 向下。
+  origin: center
+
+mask:
+  # 用 centroid 周围局部亮度自适应生成像素级 star mask。
+  radius_px: 4.0
+  local_radius_px: 8
+  local_threshold_sigma: 2.0
+  fallback_disk_if_empty: true
+  dilate_px: 1
+
+quality:
+  mask_source: tetra3rs_centroid_pseudo_v001
+  mask_confidence: 0.85

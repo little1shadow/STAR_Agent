@@ -1,0 +1,8 @@
+# Point/blob weak target detector config.
+sigma_small: 0.9
+sigma_large: 2.2
+threshold_sigma: 5.0
+min_area: 2
+max_area: 120
+min_snr: 5.0
+star_exclusion_dilation: 2
