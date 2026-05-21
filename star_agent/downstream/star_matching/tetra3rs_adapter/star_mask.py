@@ -189,7 +189,17 @@ def extract_tetra3rs_centroids(image: np.ndarray, cfg: dict[str, Any]) -> tuple[
         result = tetra3rs.extract_centroids(image, sigma_threshold=kwargs["sigma_threshold"])
 
     raw_metrics: dict[str, Any] = {"extractor": "tetra3rs.extract_centroids"}
-    if isinstance(result, tuple):
+    if hasattr(result, "centroids"):
+        # tetra3rs 0.7.x 返回 ExtractionResult；官方用法是 extraction.centroids。
+        # 同时把背景和 raw blob 数量写入 metrics，方便后续判断阈值是否合适。
+        raw_centroids = getattr(result, "centroids")
+        for key in ["num_blobs_raw", "background_mean", "background_sigma"]:
+            if hasattr(result, key):
+                value = getattr(result, key)
+                if isinstance(value, np.generic):
+                    value = value.item()
+                raw_metrics[key] = value
+    elif isinstance(result, tuple):
         raw_centroids = result[0]
         if len(result) > 1:
             raw_metrics["raw_aux"] = str(result[1])[:1000]
@@ -198,7 +208,12 @@ def extract_tetra3rs_centroids(image: np.ndarray, cfg: dict[str, Any]) -> tuple[
 
     if raw_centroids is None:
         raw_centroids = []
-    raw_centroids = list(raw_centroids)
+    try:
+        raw_centroids = list(raw_centroids)
+    except TypeError as exc:
+        raise TypeError(
+            "Unsupported tetra3rs centroid result. Expected ExtractionResult.centroids, tuple/list, or iterable."
+        ) from exc
     max_returned = int(params.get("max_returned", 5000))
     if max_returned > 0:
         raw_centroids = raw_centroids[:max_returned]
