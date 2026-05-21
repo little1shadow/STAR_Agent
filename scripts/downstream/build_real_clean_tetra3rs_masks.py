@@ -56,14 +56,13 @@ def main() -> int:
 
     功能:
     - 遍历 `clean_root/images` 下的真实 clean 图像。
-    - 用 tetra3rs 生成 star pseudo mask 和 background pseudo mask。
-    - 写入 manifest，供后续真实域 degradation / policy feedback 引用。
+    - 用 tetra3rs 生成 star pseudo mask、background pseudo mask 和 valid mask。
+    - 写入 manifest，供后续真实域 degradation 引用。
+    - 真实 clean 阶段不生成 target/proxy；target 会在后续像 synthetic clean 一样单独注入。
     """
 
     root = add_repo_path()
     from star_agent.downstream.common.image_ops import append_jsonl, ensure_dir, image_files, save_mask, write_json
-    from star_agent.downstream.proxy_metrics.extract_proxy_features import build_proxy_features
-    from star_agent.downstream.star_detection.blob.detector import summarize_star_candidates
     from star_agent.downstream.star_matching.tetra3rs_adapter.star_mask import detect_stars_with_tetra3rs
 
     args = parse_args()
@@ -87,7 +86,6 @@ def main() -> int:
         "background_mask": clean_root / "masks" / "background_pseudo_tetra3rs",
         "valid_mask": clean_root / "masks" / "valid_pseudo_tetra3rs",
         "stars_label": clean_root / "labels" / "stars_tetra3rs",
-        "proxy": clean_root / "labels" / "downstream_proxy_tetra3rs",
         "metrics": clean_root / "labels" / "tetra3rs_metrics",
     }
     for p in out_dirs.values():
@@ -111,7 +109,6 @@ def main() -> int:
         bg_mask_path = out_dirs["background_mask"] / f"{stem}.png"
         valid_mask_path = out_dirs["valid_mask"] / f"{stem}.png"
         stars_label_path = out_dirs["stars_label"] / f"{stem}.json"
-        proxy_path = out_dirs["proxy"] / f"{stem}.json"
         metrics_path = out_dirs["metrics"] / f"{stem}.json"
 
         save_mask(star_mask_path, result.star_mask)
@@ -120,27 +117,6 @@ def main() -> int:
         write_json(stars_label_path, {"mask_source": result.metrics["mask_source"], "stars": result.centroids})
         write_json(metrics_path, result.metrics)
 
-        # 复用已有 proxy schema，target 部分先置空；后续 ASTRiDE/目标检测器可追加 target proxy。
-        star_summary = summarize_star_candidates(
-            [
-                {
-                    "snr": 0.0,
-                    "fwhm_px_est": 0.0,
-                }
-                for _ in result.centroids
-            ]
-        )
-        proxy = build_proxy_features(star_summary, [], result.star_mask.shape)
-        proxy.update(
-            {
-                "detected_star_count_norm": float(len(result.centroids)),
-                "star_mask_area_ratio": float(result.metrics.get("star_mask_area_ratio", 0.0)),
-                "mask_confidence": float(result.metrics.get("mask_confidence", 0.85)),
-                "star_mask_backend": "tetra3rs",
-            }
-        )
-        write_json(proxy_path, proxy)
-
         record = {
             "image_id": stem,
             "image_path": str(image_path),
@@ -148,9 +124,10 @@ def main() -> int:
             "background_mask_path": str(bg_mask_path),
             "valid_mask_path": str(valid_mask_path),
             "stars_label_path": str(stars_label_path),
-            "downstream_proxy_path": str(proxy_path),
             "tetra3rs_metrics_path": str(metrics_path),
             "num_stars": len(result.centroids),
+            "has_target": False,
+            "target_policy": "not_injected_yet",
             "mask_source": result.metrics["mask_source"],
             "mask_confidence": result.metrics["mask_confidence"],
         }

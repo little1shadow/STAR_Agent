@@ -1,6 +1,6 @@
 # STAR-Agent 外部下游工具接入说明
 
-本文档说明如何接入 `tetra3rs` 和 `ASTRiDE`，以及如何用 `tetra3rs` 为真实 clean-data 生成 star pseudo mask。
+本文档说明如何接入 `tetra3rs` 和 `ASTRiDE`，以及如何用 `tetra3rs` 为真实 clean-data 生成 star/background pseudo mask。
 
 ## 1. 工具分工
 
@@ -9,7 +9,7 @@ tetra3rs:
   用于星点质心提取、star pseudo mask 生成、后续 plate solving / star matching。
 
 ASTRiDE:
-  用于 short-streak target / 卫星条纹目标检测，不用于 star mask。
+  用于后续 short-streak target / 卫星条纹目标检测，不用于真实 clean 阶段的 star mask。
 
 LOST:
   后续作为 star tracker / plate solving 对照工具接入，本轮暂不作为真实 clean star mask 主工具。
@@ -32,6 +32,8 @@ real clean image
 ```
 
 因此生成的 mask 是 pseudo label，不是人工 GT。
+
+注意：真实 clean 阶段不生成 target mask，也不生成 downstream proxy。target 会像 synthetic clean 一样在后续步骤单独注入，避免把真实 clean 中可能存在的未知弱目标误标成 GT。
 
 ## 3. 单张图测试 tetra3rs
 
@@ -107,7 +109,6 @@ data/clean/real_selected_v001/masks/star_pseudo_tetra3rs/
 data/clean/real_selected_v001/masks/background_pseudo_tetra3rs/
 data/clean/real_selected_v001/masks/valid_pseudo_tetra3rs/
 data/clean/real_selected_v001/labels/stars_tetra3rs/
-data/clean/real_selected_v001/labels/downstream_proxy_tetra3rs/
 data/clean/real_selected_v001/labels/tetra3rs_metrics/
 data/clean/real_selected_v001/manifest_tetra3rs_pseudo.jsonl
 ```
@@ -138,7 +139,7 @@ configs/downstream/star_matching/tetra3rs.yaml
 
 ## 6. ASTRiDE 单张图测试
 
-ASTRiDE 用于条纹目标检测：
+ASTRiDE 用于后续条纹目标检测。真实 clean 阶段暂时不需要跑它，因为 target 会后添加：
 
 ```bash
 cd STAR_Agent

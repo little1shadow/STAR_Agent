@@ -17,12 +17,16 @@ clean_sources:
       - offline_policy_rollout
   real_selected_v001:
     domain: real
-    description: 从真实数据中筛选的相对 clean 图像，主要用于真实域验证、风格校准和仿真真实性对照。
+    description: 从真实数据中筛选的相对 clean 图像，先生成 star/background pseudo mask，target 后续单独注入。
     root_dir: STAR_Agent/data/clean/real_selected_v001
     manifest_path: STAR_Agent/data/clean/real_selected_v001/manifest.jsonl
     has_star_mask: false
+    has_star_pseudo_mask: true
+    star_pseudo_manifest_path: STAR_Agent/data/clean/real_selected_v001/manifest_tetra3rs_pseudo.jsonl
+    star_pseudo_mask_source: tetra3rs_centroid_pseudo_v001
     has_target_mask: false
     has_target_label: false
+    target_policy: inject_later_like_synthetic
     recommended_for:
       - real_domain_validation
       - degradation_visual_calibration

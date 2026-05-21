@@ -10,25 +10,22 @@
 restoration 是否保护了星点、目标和下游任务能力。
 ```
 
-因此需要先补一套轻量下游检测器，用来产生：
+因此需要先补一套下游感知工具。当前真实 clean 阶段先只产生：
 
 ```text
-star_mask / target_mask / background_mask
-star_count / target_candidate_count
-star_snr / target_snr
-target_confidence
-online downstream proxy features
-real clean pseudo labels
+star_mask / background_mask / valid_mask
+star centroid labels
+real clean star/background pseudo labels
 ```
 
-这些信息后续会进入：
+target 和 online downstream proxy 暂时不在真实 clean 阶段生成，因为真实 clean 中没有可靠目标 GT。目标会像 synthetic clean 一样在后续步骤单独注入。生成后的 star/background 信息后续会进入：
 
 ```text
-1. 真实 clean 的伪标签生成
-2. executor 的区域加权 loss
-3. Star-DepictQA-Lite 的 risk label / risk head
-4. Policy Net 的 state feature
-5. offline reward 和 downstream metric
+1. 真实 clean 的伪标签记录
+2. 后续真实域 degradation 的背景/星点区域约束
+3. executor 的区域加权 loss
+4. Star-DepictQA-Lite 的 risk label / risk head
+5. 后续 target 注入后的下游任务评价
 ```
 
 ## 2. 当前第一阶段补哪些 detector
@@ -40,28 +37,34 @@ real clean pseudo labels
 2. 小目标检测
 ```
 
-当前已经补入三个轻量 detector：
+当前已经补入的工具分两层：
 
 ```text
 star_detection/blob/detector.py
-  星点 blob detector，用于 star pseudo mask、星点数量、SNR、FWHM proxy。
+  轻量备用星点 blob detector，用于 tetra3rs 不可用时生成 star/background pseudo mask。
 
 target_detection/log_blob_detector/detector.py
-  点状弱目标 detector，对应 point_blob target。
+  点状弱目标 detector，后续 target 注入和下游检测时使用。
 
 target_detection/streak_detector/detector.py
-  短条纹目标 detector，对应 short_streak target。
+  短条纹目标 detector，后续 target 注入和下游检测时使用。
+
+star_matching/tetra3rs_adapter/
+  正式真实 clean star pseudo mask 生成工具，优先使用。
+
+target_detection/astride_adapter/
+  ASTRiDE 条纹目标检测工具，后续 short-streak target 阶段使用。
 ```
 
-暂时不先接 LOST / tetra3rs / astrometry.net 的原因：
+真实 clean 阶段不使用 target detector 的原因：
 
 ```text
-1. 它们依赖星表、相机参数、plate solving 配置，工程链更长。
-2. 当前最急的是先得到真实 clean 的 pseudo star/target/background mask。
-3. Policy Net 第一阶段需要的是在线 proxy，不一定一开始就要完整 plate solving。
+1. 真实 clean 中没有可靠 target GT。
+2. 真实 clean 可能存在未知弱目标，直接检测会把未知内容误标成监督标签。
+3. target 会在后续步骤像 synthetic clean 一样单独注入，届时会有明确 target mask/label。
 ```
 
-后续可以把 LOST/tetra3rs 作为 star matching adapter 接入。
+LOST 后续作为 star matching / plate solving 对照工具接入。
 
 ## 3. 输出内容
 
@@ -95,7 +98,7 @@ python scripts/downstream/demo/run_detectors.py \
   --output_dir runs/downstream/demo/synthetic_clean_000000
 ```
 
-如果是服务器真实 clean：
+如果只是临时看真实图的检测效果，可以跑 demo；但它不会作为真实 clean 数据集的正式标签来源：
 
 ```bash
 python scripts/downstream/demo/run_detectors.py \
@@ -103,9 +106,29 @@ python scripts/downstream/demo/run_detectors.py \
   --output_dir runs/downstream/demo/real_frame_0120
 ```
 
-## 5. 为 real selected clean 生成 pseudo masks
+## 5. 为 real selected clean 生成 star/background pseudo masks
 
-真实 clean 通常没有严格 GT，因此需要伪标签。
+真实 clean 通常没有严格 GT，因此需要星点/背景伪标签。优先使用 tetra3rs：
+
+```bash
+conda run -n star_downstream python scripts/downstream/build_real_clean_tetra3rs_masks.py \
+  --clean_root data/clean/real_selected_v001 \
+  --recursive \
+  --overwrite
+```
+
+输出：
+
+```text
+data/clean/real_selected_v001/masks/star_pseudo_tetra3rs/
+data/clean/real_selected_v001/masks/background_pseudo_tetra3rs/
+data/clean/real_selected_v001/masks/valid_pseudo_tetra3rs/
+data/clean/real_selected_v001/labels/stars_tetra3rs/
+data/clean/real_selected_v001/labels/tetra3rs_metrics/
+data/clean/real_selected_v001/manifest_tetra3rs_pseudo.jsonl
+```
+
+如果 tetra3rs 不可用，可以使用轻量 detector 备用：
 
 命令：
 
@@ -134,12 +157,10 @@ python scripts/downstream/build_real_clean_pseudo_labels.py \
 
 ```text
 data/clean/real_selected_v001/masks/star_pseudo/
-data/clean/real_selected_v001/masks/target_pseudo/
 data/clean/real_selected_v001/masks/background_pseudo/
 data/clean/real_selected_v001/masks/valid_pseudo/
 data/clean/real_selected_v001/labels/stars_pseudo/
-data/clean/real_selected_v001/labels/targets_pseudo/
-data/clean/real_selected_v001/labels/downstream_proxy/
+data/clean/real_selected_v001/labels/star_pseudo_metrics/
 data/clean/real_selected_v001/manifest_pseudo.jsonl
 ```
 
@@ -147,12 +168,14 @@ data/clean/real_selected_v001/manifest_pseudo.jsonl
 
 ```text
 mask_source: pseudo_detector_v001
-mask_confidence: 0.7
+mask_confidence: 0.65
+has_target: false
+target_policy: not_injected_yet
 ```
 
-## 6. Policy Net 当前可用 proxy features
+## 6. Policy Net 后续可用 proxy features
 
-当前 demo 和 pseudo label 脚本会输出：
+真实 clean 的 star/background mask 生成脚本当前不输出 proxy。等 target 注入、executor 恢复和下游评价流程接上后，再统一生成：
 
 ```text
 detected_star_count_norm
@@ -182,12 +205,12 @@ reprojection_error_norm
 推荐顺序：
 
 ```text
-1. 用当前轻量 detector 给 real selected clean 生成 pseudo labels。
+1. 用 tetra3rs 给 real selected clean 生成 star/background pseudo labels。
 2. 抽查 real pseudo masks 是否合理，必要时调整 threshold。
-3. 用 synthetic GT mask 评估 detector 质量，得到 detector recall / false alarm。
-4. 将 downstream proxy features 接入 Star-DepictQA-Lite risk head。
-5. 将 downstream proxy features 接入 Policy Net state。
-6. 后续再补 LOST / tetra3rs 适配器，提供 plate solving 相关 proxy。
+3. 后续像 synthetic clean 一样给 real clean 注入 target，生成明确 target mask/label。
+4. 再生成 degradation，并让 target mask / star mask / bg mask 都能溯源。
+5. executor 恢复之后，再计算 downstream proxy features。
+6. 后续再补 LOST / plate solving 指标，提供正式 star matching proxy。
 ```
 
 ## 8. 外部工具正式接入
