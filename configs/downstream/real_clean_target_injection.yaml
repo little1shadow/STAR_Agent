@@ -1,0 +1,40 @@
+# Real selected clean target injection config.
+# 真实 clean 默认 80% 图像注入目标；未选中的图保留无目标版本。
+
+selection:
+  seed: 131
+  target_image_ratio: 0.8
+
+outputs:
+  # 尽量保持和 synthetic clean 一样的目录结构。
+  # 注意：图像会直接覆盖 clean_root/images 下的原图，运行前请确认已有备份。
+  manifest_name: manifest.jsonl
+  summary_name: real_clean_summary.json
+
+targets:
+  enabled: true
+  # 被 selection 选中的图片会强制注入目标，因此这里保持 1.0。
+  image_probability: 1.0
+  targets_per_image_min: 1
+  targets_per_image_max: 5
+  min_edge_distance_px: 42
+  min_distance_from_star_px: 8
+  min_distance_between_targets_px: 28
+  local_noise_sigma: 7.0
+  mask_threshold_ratio: 0.08
+  max_position_attempts: 100
+
+  # 30% 点状目标。
+  point_blob:
+    probability: 0.3
+    snr_range: [6.0, 16.0]
+    fwhm_px_range: [1.4, 2.4]
+    axis_ratio_range: [1.0, 1.45]
+
+  # 70% 短条纹目标。
+  short_streak:
+    probability: 0.7
+    snr_range: [7.0, 22.0]
+    length_px_range: [10.0, 34.0]
+    width_px_range: [1.2, 2.8]
+    end_taper_strength: 0.35

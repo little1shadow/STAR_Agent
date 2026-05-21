@@ -10,22 +10,22 @@
 restoration 是否保护了星点、目标和下游任务能力。
 ```
 
-因此需要先补一套下游感知工具。当前真实 clean 阶段先只产生：
+因此需要先补一套下游感知工具。当前真实 clean 阶段产生：
 
 ```text
-star_mask / background_mask / valid_mask
+star_mask / target_mask / background_mask / valid_mask
 star centroid labels
-real clean star/background pseudo labels
+real clean target labels
 ```
 
-target 和 online downstream proxy 暂时不在真实 clean 阶段生成，因为真实 clean 中没有可靠目标 GT。目标会像 synthetic clean 一样在后续步骤单独注入。生成后的 star/background 信息后续会进入：
+target 不是从真实 clean 中检测出来的，而是在真实 clean 上人工仿真注入的。因此它有明确 GT，和 synthetic clean 的目标标签逻辑一致。当前仍然不在真实 clean 阶段生成 online downstream proxy，proxy 会在 executor 恢复和下游评价阶段统一计算。
 
 ```text
-1. 真实 clean 的伪标签记录
-2. 后续真实域 degradation 的背景/星点区域约束
+1. 真实 clean 的 star pseudo label 和 target GT label
+2. 后续真实域 degradation 的背景/星点/目标区域约束
 3. executor 的区域加权 loss
 4. Star-DepictQA-Lite 的 risk label / risk head
-5. 后续 target 注入后的下游任务评价
+5. 下游任务评价
 ```
 
 ## 2. 当前第一阶段补哪些 detector
@@ -56,12 +56,12 @@ target_detection/astride_adapter/
   ASTRiDE 条纹目标检测工具，后续 short-streak target 阶段使用。
 ```
 
-真实 clean 阶段不使用 target detector 的原因：
+真实 clean 阶段不使用 target detector 生成 GT 的原因：
 
 ```text
 1. 真实 clean 中没有可靠 target GT。
 2. 真实 clean 可能存在未知弱目标，直接检测会把未知内容误标成监督标签。
-3. target 会在后续步骤像 synthetic clean 一样单独注入，届时会有明确 target mask/label。
+3. 因此 target 采用注入方式生成，80% 图像含目标，每张 1-5 个，短条纹:点状 = 7:3。
 ```
 
 LOST 后续作为 star matching / plate solving 对照工具接入。
@@ -106,9 +106,9 @@ python scripts/downstream/demo/run_detectors.py \
   --output_dir runs/downstream/demo/real_frame_0120
 ```
 
-## 5. 为 real selected clean 生成 star/background pseudo masks
+## 5. 为 real selected clean 生成 star/target/background masks
 
-真实 clean 通常没有严格 GT，因此需要星点/背景伪标签。优先使用 tetra3rs：
+真实 clean 通常没有严格星点 GT，因此星点/背景使用 tetra3rs 伪标签；target 使用注入方式生成明确 GT。优先使用 tetra3rs：
 
 ```bash
 conda run -n star_downstream python scripts/downstream/build_real_clean_tetra3rs_masks.py \
@@ -120,12 +120,16 @@ conda run -n star_downstream python scripts/downstream/build_real_clean_tetra3rs
 输出：
 
 ```text
-data/clean/real_selected_v001/masks/star_pseudo_tetra3rs/
-data/clean/real_selected_v001/masks/background_pseudo_tetra3rs/
-data/clean/real_selected_v001/masks/valid_pseudo_tetra3rs/
-data/clean/real_selected_v001/labels/stars_tetra3rs/
+data/clean/real_selected_v001/images/
+data/clean/real_selected_v001/masks/star/
+data/clean/real_selected_v001/masks/target/
+data/clean/real_selected_v001/masks/background/
+data/clean/real_selected_v001/masks/valid/
+data/clean/real_selected_v001/labels/stars/
+data/clean/real_selected_v001/labels/targets/
 data/clean/real_selected_v001/labels/tetra3rs_metrics/
-data/clean/real_selected_v001/manifest_tetra3rs_pseudo.jsonl
+data/clean/real_selected_v001/manifest.jsonl
+data/clean/real_selected_v001/real_clean_summary.json
 ```
 
 如果 tetra3rs 不可用，可以使用轻量 detector 备用：
@@ -175,7 +179,7 @@ target_policy: not_injected_yet
 
 ## 6. Policy Net 后续可用 proxy features
 
-真实 clean 的 star/background mask 生成脚本当前不输出 proxy。等 target 注入、executor 恢复和下游评价流程接上后，再统一生成：
+真实 clean 的 star/target/background mask 生成脚本当前不输出 proxy。等 degradation、executor 恢复和下游评价流程接上后，再统一生成：
 
 ```text
 detected_star_count_norm
@@ -205,9 +209,9 @@ reprojection_error_norm
 推荐顺序：
 
 ```text
-1. 用 tetra3rs 给 real selected clean 生成 star/background pseudo labels。
-2. 抽查 real pseudo masks 是否合理，必要时调整 threshold。
-3. 后续像 synthetic clean 一样给 real clean 注入 target，生成明确 target mask/label。
+1. 用 tetra3rs 给 real selected clean 生成 star pseudo labels。
+2. 同一脚本给 80% 真实 clean 注入 target，生成 target mask/label。
+3. 抽查 real star/target/background masks 是否合理，必要时调整 threshold 或 target cfg。
 4. 再生成 degradation，并让 target mask / star mask / bg mask 都能溯源。
 5. executor 恢复之后，再计算 downstream proxy features。
 6. 后续再补 LOST / plate solving 指标，提供正式 star matching proxy。
