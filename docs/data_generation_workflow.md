@@ -179,6 +179,8 @@ python scripts/data_generation/build_single_degradation.py \
   --config configs/data_generation/degradation_single_real_selected.yaml
 ```
 
+单独生成每一类退化
+python scripts/data_generation/build_single_degradation.py --config configs/data_generation/degradation_single_real_selected.yaml --degradation noise --per_level_target 50
 输出位置：
 
 ```text
@@ -218,6 +220,11 @@ python scripts/data_generation/build_multi_degradation.py \
   --stage double
 ```
 
+```bash
+python scripts/data_generation/build_multi_degradation.py \
+  --config configs/data_generation/degradation_multi_real_selected.yaml \
+  --stage double
+```
 该脚本需要在 single 全部完成后再运行。
 
 ## 8. Triple Degradation 生成原则
@@ -249,6 +256,11 @@ python scripts/data_generation/build_multi_degradation.py \
   --stage triple
 ```
 
+```bash
+python scripts/data_generation/build_multi_degradation.py \
+  --config configs/data_generation/degradation_multi_real_selected.yaml \
+  --stage triple
+```
 ## 9. 推荐总体顺序
 
 ```text

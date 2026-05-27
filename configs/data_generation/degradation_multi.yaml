@@ -8,6 +8,7 @@ clean_source:
   root_dir: STAR_Agent/data/clean/synthetic_v002_targets
   manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
 
+single_degradation_config: STAR_Agent/configs/data_generation/degradation_single.yaml
 source_single_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets/single
 output_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets
 

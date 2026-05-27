@@ -56,3 +56,17 @@ reports/**
 __pycache__/
 *.pyc
 .DS_Store
+# local patches and generated archives
+*.zip
+*.tar
+*.tar.gz
+
+# generated data
+data/clean/
+data/degraded/
+data/tool_datasets/
+data/star_depictqa_lite_meta/
+data/policy_data/
+runs/
+checkpoints/
+*.patch
