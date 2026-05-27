@@ -1,0 +1,31 @@
+# Optional mixed-training recipe for executor model training scripts.
+# 注意：这个文件不生成新图片，只描述训练时如何从 synthetic 和 real-selected 两套 manifest 采样。
+
+stage_1_synthetic_pretrain:
+  synthetic_weight: 1.0
+  real_selected_weight: 0.0
+  stage_mix:
+    single: 0.6
+    double: 0.3
+    triple: 0.1
+
+stage_2_domain_finetune:
+  synthetic_weight: 0.65
+  real_selected_weight: 0.35
+  stage_mix:
+    single: 0.5
+    double: 0.35
+    triple: 0.15
+
+stage_3_real_biased_task_aware:
+  synthetic_weight: 0.4
+  real_selected_weight: 0.6
+  stage_mix:
+    single: 0.4
+    double: 0.4
+    triple: 0.2
+
+recommended_reporting:
+  - synthetic_test
+  - real_selected_test
+  - true_real_degraded_unpaired_eval

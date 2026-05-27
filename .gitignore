@@ -70,3 +70,8 @@ data/policy_data/
 runs/
 checkpoints/
 *.patch
+
+# keep tool dataset directory skeletons while ignoring generated images/manifests
+!data/tool_datasets/
+!data/tool_datasets/**/
+!data/tool_datasets/**/.gitkeep

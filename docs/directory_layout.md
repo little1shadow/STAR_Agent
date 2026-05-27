@@ -315,4 +315,4 @@ data/degraded/triple/
 data/tool_datasets/denoising/
 ```
 
-这些旧路径只作为早期骨架和兼容路径保留，不建议继续生成新数据。
+这些旧路径已经废弃并删除。后续 executor 数据只允许写入带 domain/source 的新路径，避免 synthetic、real-selected 和 true-real-degraded 数据混在一起。

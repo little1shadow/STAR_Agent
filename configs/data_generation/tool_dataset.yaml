@@ -1,5 +1,6 @@
-# STAR-Agent executor/tool dataset config.
-# 从 domain/source_name 分层后的退化数据构建各 executor 的 train/val/test。
+# STAR-Agent executor/tool dataset config: fully synthetic domain.
+# 本配置只生成工具训练/验证/测试数据，不训练 executor model。
+# 数据源是完全仿真的 clean + target + mask，监督最可靠，适合作为 Stage 1 主训练数据。
 
 clean_source:
   domain: synthetic
@@ -7,9 +8,24 @@ clean_source:
   root_dir: STAR_Agent/data/clean/synthetic_v002_targets
   manifest_path: STAR_Agent/data/clean/synthetic_v002_targets/manifest.jsonl
 
+single_degradation_config: STAR_Agent/configs/data_generation/degradation_single.yaml
 degraded_root: STAR_Agent/data/degraded/synthetic/synthetic_v002_targets
 output_root: STAR_Agent/data/tool_datasets/synthetic/synthetic_v002_targets
 
+# link_mode 推荐 hardlink：同一文件系统下几乎不占额外空间；失败时脚本会自动 copy fallback。
+# 如果后续要把 tool dataset 单独打包搬走，可以改成 copy。
+link_mode: hardlink
+include_multi_degradation: true
+min_removed_level: 1
+
+# 如果数据过大，可以设置 max_pairs_per_subtask；null 表示尽量使用全部候选 pair。
+max_pairs_per_subtask: null
+stage_weights:
+  single: 0.6
+  double: 0.3
+  triple: 0.1
+
+# split 必须按 clean_image_id 做，而不是按文件随机分。
 splits:
   train: 0.8
   val: 0.1
@@ -19,19 +35,64 @@ splits:
 subtasks:
   denoising:
     degradations: [noise]
-    include_multi_degradation: true
+    min_removed_level: 1
+    tools:
+      - id: tiny_denoise_v001
+        role: deploy_candidate
+      - id: swinir_v001
+        role: heavy_baseline_or_teacher
+      - id: mprnet_v001
+        role: heavy_baseline_or_teacher
+
   desmear:
     degradations: [smear]
-    include_multi_degradation: true
+    min_removed_level: 1
+    tools:
+      - id: tiny_desmear_v001
+        role: deploy_candidate
+
   decosmic_ray:
     degradations: [cosmic_ray]
-    include_multi_degradation: true
+    min_removed_level: 1
+    tools:
+      - id: astroscrappy_eval_v001
+        role: classical_eval
+        splits:
+          train: 0.0
+          val: 0.0
+          test: 1.0
+      - id: tiny_decosmic_v001
+        role: optional_deploy_candidate
+
   dead_pixel_repair:
     degradations: [dead_pixels]
-    include_multi_degradation: true
+    min_removed_level: 1
+    tools:
+      - id: classical_eval_v001
+        role: classical_eval
+        splits:
+          train: 0.0
+          val: 0.0
+          test: 1.0
+      - id: tiny_deadpixel_v001
+        role: optional_deploy_candidate
+
   destray_light:
     degradations: [dqg, solar_stray_light]
-    include_multi_degradation: true
+    min_removed_level: 1
+    tools:
+      - id: tiny_destray_v001
+        role: deploy_candidate
+      - id: dehazeformer_v001
+        role: heavy_baseline_or_teacher
+
   motion_deblurring:
     degradations: [motion_blur]
-    include_multi_degradation: true
+    min_removed_level: 1
+    tools:
+      - id: tiny_deblur_v001
+        role: deploy_candidate
+      - id: restormer_v001
+        role: heavy_baseline_or_teacher
+      - id: mprnet_v001
+        role: heavy_baseline_or_teacher

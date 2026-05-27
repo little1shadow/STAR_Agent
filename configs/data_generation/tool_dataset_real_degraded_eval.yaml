@@ -1,0 +1,35 @@
+# Unpaired true-real degraded executor evaluation config.
+# 这类数据通常没有 clean GT，因此不由 build_tool_datasets.py 生成 paired train/val/test。
+# 后续真实退化图接入后，应写入 data/tool_datasets/real_degraded/unpaired_v001/<subtask>_eval/，
+# 并只计算无参考指标、下游检测指标和人工评估。
+
+real_degraded_source:
+  domain: real_degraded
+  name: unpaired_v001
+  input_root: STAR_Agent/data/real_degraded/unpaired_v001/images
+  output_root: STAR_Agent/data/tool_datasets/real_degraded/unpaired_v001
+
+subtasks:
+  denoising_eval:
+    degradations: [noise]
+  desmear_eval:
+    degradations: [smear]
+  decosmic_ray_eval:
+    degradations: [cosmic_ray]
+  dead_pixel_repair_eval:
+    degradations: [dead_pixels]
+  destray_light_eval:
+    degradations: [dqg, solar_stray_light]
+  motion_deblurring_eval:
+    degradations: [motion_blur]
+
+metrics:
+  no_reference:
+    - background_flatness
+    - star_count_stability
+    - centroid_sharpness
+    - target_candidate_count
+  downstream:
+    - star_detection_proxy
+    - target_detection_proxy
+    - matching_confidence

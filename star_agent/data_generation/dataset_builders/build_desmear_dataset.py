@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Dead-pixel repair tool dataset builder wrapper."""
+"""Desmear tool dataset builder wrapper."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .common import add_common_args, build_tool_dataset, load_config
 
 
 def main() -> int:
-    """只构建 dead_pixel_repair 子任务数据。
+    """只构建 desmear 子任务数据。
 
     输入:
     - 通用 tool dataset CLI 参数。
@@ -20,10 +20,10 @@ def main() -> int:
     - 进程退出码。
     """
 
-    parser = argparse.ArgumentParser(description="Build dead-pixel repair executor datasets.")
+    parser = argparse.ArgumentParser(description="Build desmear executor datasets.")
     add_common_args(parser)
     args = parser.parse_args()
-    args.subtask = ["dead_pixel_repair"]
+    args.subtask = ["desmear"]
     build_tool_dataset(load_config(args.config), args)
     return 0
 
